@@ -41,7 +41,7 @@ definition = ActionDefinition(
                 description= 'This action will generate a PowerPoint slide based on a Look',
                 params= [],
                 supported_formats= ['json'],
-                supported_formattings= ['formatted'],
+                supported_formattings= ['unformatted'],
                 supported_visualization_formattings= ['apply'],
             )
 
@@ -65,15 +65,6 @@ def form():
 
 @app.post(f'/actions/{slug}/action')
 def action(payload: ActionRequest):
-    """Dummy Endpoint for demonstration purposes."""
-    # sdk = get_sdk_for_schedule(payload.scheduled_plan.scheduled_plan_id)
-    # plan = sdk.scheduled_plan(payload.scheduled_plan.scheduled_plan_id)
-    # look = sdk.look(plan.look_id)
-    # image = sdk.run_look(plan.look_id, 'png')
-    # description = look.description
-    # print(payload)
-    # print(payload.attachment.data)
-
 
     # create presentation
     prs = Presentation()
@@ -84,14 +75,16 @@ def action(payload: ActionRequest):
 
     # Pull back data and format into series
     data = json.loads(payload.attachment.data)
+    print(data[0])
 
     ##### Pull back Vis config Info########
     visconfig = payload.scheduled_plan.query['vis_config']
-    print(visconfig)
+    # print(visconfig)
 
     # Get type of visualization (Column, pie, line, etc)
     vistype = visconfig['type']
-    numberformat = visconfig['label_value_format']
+
+    # numberformat = visconfig['label_value_format']
 
     # Get colors from Vis
     colors = visconfig['series_colors']
@@ -115,15 +108,17 @@ def action(payload: ActionRequest):
         for i in data:
             categories.append(i[dimension])
         chart_data.categories = categories
-        maxvaluedefault = 0
+        # maxvaluedefault = 0
         for pivot in first_row[measure].keys():
             for key in first_row[measure][pivot].keys():
                 for dim in categories:
                     values = []
                     for entry in data:
-                        values.append(entry[measure][pivot][key])
-                        if float(entry[measure][pivot][key])>maxvaluedefault:
-                            maxvaluedefault == float(entry[measure][pivot][key])
+                        # int(a.replace(',', ''))
+                        # values.append(float(entry[measure][pivot][key].replace(',', '')))
+                        values.append(float(entry[measure][pivot][key]))
+                        # if float(entry[measure][pivot][key])>maxvaluedefault:
+                        #     maxvaluedefault == float(entry[measure][pivot][key])
                 setvalues = tuple(values)
                 chart_data.add_series(key, setvalues)
     else:
@@ -137,13 +132,11 @@ def action(payload: ActionRequest):
         chart_data.add_series(dimension, setvalues)
 
   
-    # # Get colors from Vis
-    # colors = visconfig['series_colors']
 
     #yaxis
-    maxvalue = int(visconfig['y_axes'][0]['maxValue'])
-    if maxvalue=="":
-        maxvalue == maxvaluedefault
+    # maxvalue = int(visconfig['y_axes'][0]['maxValue'])
+    # if maxvalue=="":
+    #     maxvalue == maxvaluedefault
 
  
     # Create Chart
@@ -153,7 +146,7 @@ def action(payload: ActionRequest):
         ).chart
         series = chart.plots[0].series[0]
         value_axis = chart.value_axis
-        value_axis.maximum_scale = maxvalue
+        # value_axis.maximum_scale = maxvalue
         series = chart.plots[0].series
 
         #totals
@@ -168,11 +161,13 @@ def action(payload: ActionRequest):
         color_list = []
         for hex in colors:
             color_list.append(colors[hex])
-        i = 1
+       
+        i = 0
+        print(pivotsraw)
         for (bar) in series:
             fill = bar.format.fill
             fill.solid()
-            if pivotsraw=="":
+            if pivotsraw=="" or pivotsraw is None: 
                 color = color_list[0]
                 rgbcolors = ImageColor.getrgb(color)
                 rgbcolors = tuple(rgbcolors)
@@ -189,7 +184,6 @@ def action(payload: ActionRequest):
                 chart.legend.position = XL_LEGEND_POSITION.BOTTOM
                 chart.legend.include_in_layout = False
 
-
     # elif vistype == 'looker_pie':
     #     chart = slide.shapes.add_chart(
     #         XL_CHART_TYPE.PIE, x, y, cx, cy, chart_data
@@ -202,11 +196,11 @@ def action(payload: ActionRequest):
         series = chart.plots[0].series[0]
         line = series.format.line
         value_axis = chart.value_axis
-        value_axis.maximum_scale = maxvalue
+        # value_axis.maximum_scale = maxvalue
         color_list = []
         for hex in colors:
             color_list.append(colors[hex])
-        ## looks like line isn't iterable in this version. assuming one series for now
+        ## looks like line isn't iterable in this version? Need to dig more. I'm assuming one series for now
         color = color_list[0]
         rgbcolors = ImageColor.getrgb(color)
         rgbcolors = tuple(rgbcolors)

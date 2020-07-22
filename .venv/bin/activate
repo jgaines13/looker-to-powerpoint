@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/jessgaines/ppt-action/fast-hub/.venv"
+VIRTUAL_ENV="/Users/jessgaines/ppt-action/FastHub_Powerpoint/.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
